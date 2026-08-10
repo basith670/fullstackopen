@@ -92,7 +92,8 @@ const App = () => {
   const [filter, setFilter] = useState('')
 
   const [notification, setNotification] = useState(null)
-  const [notificationType, setNotificationType] = useState('success')
+  const [notificationType, setNotificationType] =
+    useState('success')
 
   const showNotification = (message, type) => {
     setNotification(message)
@@ -102,6 +103,10 @@ const App = () => {
       setNotification(null)
     }, 5000)
   }
+
+  // ==================================================
+  // Fetch all persons
+  // ==================================================
 
   useEffect(() => {
     personsService
@@ -113,19 +118,29 @@ const App = () => {
         console.error(error)
 
         showNotification(
-          'Unable to load phonebook data',
+          error.response?.data?.error ||
+            'Unable to load phonebook data',
           'error'
         )
       })
   }, [])
+
+  // ==================================================
+  // Add / Update person
+  // ==================================================
 
   const addPerson = event => {
     event.preventDefault()
 
     const existingPerson = persons.find(
       person =>
-        person.name.toLowerCase() === newName.toLowerCase()
+        person.name.toLowerCase() ===
+        newName.toLowerCase()
     )
+
+    // ==================================================
+    // Update existing person
+    // ==================================================
 
     if (existingPerson) {
       const replace = window.confirm(
@@ -164,13 +179,18 @@ const App = () => {
           console.error(error)
 
           showNotification(
-            `${existingPerson.name} was already removed from the server`,
+            error.response?.data?.error ||
+              `${existingPerson.name} could not be updated`,
             'error'
           )
         })
 
       return
     }
+
+    // ==================================================
+    // Create new person
+    // ==================================================
 
     const personObject = {
       name: newName,
@@ -194,14 +214,21 @@ const App = () => {
         console.error(error)
 
         showNotification(
-          'Failed to add person to phonebook',
+          error.response?.data?.error ||
+            'Failed to add person to phonebook',
           'error'
         )
       })
   }
 
+  // ==================================================
+  // Delete person
+  // ==================================================
+
   const deletePerson = id => {
-    const person = persons.find(person => person.id === id)
+    const person = persons.find(
+      person => person.id === id
+    )
 
     if (!person) {
       return
@@ -231,11 +258,16 @@ const App = () => {
         console.error(error)
 
         showNotification(
-          `${person.name} was already removed from the server`,
+          error.response?.data?.error ||
+            `${person.name} was already removed from the server`,
           'error'
         )
       })
   }
+
+  // ==================================================
+  // Input handlers
+  // ==================================================
 
   const handleNameChange = event => {
     setNewName(event.target.value)
@@ -249,11 +281,19 @@ const App = () => {
     setFilter(event.target.value)
   }
 
+  // ==================================================
+  // Filter persons
+  // ==================================================
+
   const personsToShow = persons.filter(person =>
     person.name
       .toLowerCase()
       .includes(filter.toLowerCase())
   )
+
+  // ==================================================
+  // Render
+  // ==================================================
 
   return (
     <div className="app">
