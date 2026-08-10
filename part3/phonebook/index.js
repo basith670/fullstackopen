@@ -63,27 +63,25 @@ app.use(
 // API routes
 // ==================================================
 
+// ==================================================
 // 3.13
 // GET all persons from MongoDB
+// ==================================================
 
-app.get('/api/persons', (request, response) => {
+app.get('/api/persons', (request, response, next) => {
   Person.find({})
     .then(persons => {
       response.json(persons)
     })
-    .catch(error => {
-      console.log(error)
-
-      response.status(500).json({
-        error: 'error fetching persons'
-      })
-    })
+    .catch(error => next(error))
 })
 
-// 3.2
-// Information page
+// ==================================================
+// 3.18
+// GET phonebook information
+// ==================================================
 
-app.get('/info', (request, response) => {
+app.get('/info', (request, response, next) => {
   Person.countDocuments({})
     .then(count => {
       const currentTime = new Date()
@@ -93,19 +91,15 @@ app.get('/info', (request, response) => {
         <p>${currentTime}</p>
       `)
     })
-    .catch(error => {
-      console.log(error)
-
-      response.status(500).send({
-        error: 'error fetching phonebook information'
-      })
-    })
+    .catch(error => next(error))
 })
 
-// 3.3
+// ==================================================
+// 3.18
 // GET one person
+// ==================================================
 
-app.get('/api/persons/:id', (request, response) => {
+app.get('/api/persons/:id', (request, response, next) => {
   const id = request.params.id
 
   Person.findById(id)
@@ -118,19 +112,15 @@ app.get('/api/persons/:id', (request, response) => {
         })
       }
     })
-    .catch(error => {
-      console.log(error)
-
-      response.status(400).json({
-        error: 'malformatted id'
-      })
-    })
+    .catch(error => next(error))
 })
 
-// 3.4
+// ==================================================
+// 3.15
 // DELETE one person
+// ==================================================
 
-app.delete('/api/persons/:id', (request, response) => {
+app.delete('/api/persons/:id', (request, response, next) => {
   const id = request.params.id
 
   Person.findByIdAndDelete(id)
@@ -143,19 +133,15 @@ app.delete('/api/persons/:id', (request, response) => {
 
       response.status(204).end()
     })
-    .catch(error => {
-      console.log(error)
-
-      response.status(400).json({
-        error: 'malformatted id'
-      })
-    })
+    .catch(error => next(error))
 })
 
-// 3.5 + 3.6 + 3.14
+// ==================================================
+// 3.14
 // POST a new person
+// ==================================================
 
-app.post('/api/persons', (request, response) => {
+app.post('/api/persons', (request, response, next) => {
   const body = request.body
 
   // Check that name exists
@@ -172,7 +158,6 @@ app.post('/api/persons', (request, response) => {
     })
   }
 
-  // Create new MongoDB document
   const person = new Person({
     name: body.name,
     number: body.number
@@ -183,13 +168,38 @@ app.post('/api/persons', (request, response) => {
     .then(savedPerson => {
       response.status(201).json(savedPerson)
     })
-    .catch(error => {
-      console.log(error)
+    .catch(error => next(error))
+})
 
-      response.status(500).json({
-        error: 'error saving person'
-      })
+// ==================================================
+// 3.17
+// PUT - update an existing person
+// ==================================================
+
+app.put('/api/persons/:id', (request, response, next) => {
+  const id = request.params.id
+
+  const { name, number } = request.body
+
+  Person.findById(id)
+    .then(person => {
+      if (!person) {
+        return response.status(404).json({
+          error: 'person not found'
+        })
+      }
+
+      person.name = name
+      person.number = number
+
+      return person.save()
     })
+    .then(updatedPerson => {
+      if (updatedPerson) {
+        response.json(updatedPerson)
+      }
+    })
+    .catch(error => next(error))
 })
 
 // ==================================================
@@ -211,6 +221,36 @@ app.use((request, response) => {
     error: 'unknown endpoint'
   })
 })
+
+// ==================================================
+// 3.16
+// Error handler middleware
+// ==================================================
+
+const errorHandler = (
+  error,
+  request,
+  response,
+  next
+) => {
+  console.error(error.message)
+
+  if (error.name === 'CastError') {
+    return response.status(400).json({
+      error: 'malformatted id'
+    })
+  }
+
+  if (error.name === 'ValidationError') {
+    return response.status(400).json({
+      error: error.message
+    })
+  }
+
+  next(error)
+}
+
+app.use(errorHandler)
 
 // ==================================================
 // Start server
