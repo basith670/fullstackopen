@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import axios from 'axios'
 
 const Filter = ({ searchTerm, handleSearchChange }) => {
   return (
@@ -52,7 +53,7 @@ const Persons = ({ persons, searchTerm }) => {
   return (
     <div>
       {filteredPersons.map(person => (
-        <div key={person.name}>
+        <div key={person.id}>
           {person.name} {person.number}
         </div>
       ))}
@@ -61,22 +62,26 @@ const Persons = ({ persons, searchTerm }) => {
 }
 
 const App = () => {
-  const [persons, setPersons] = useState([
-    {
-      name: 'Arto Hellas',
-      number: '040-123456'
-    }
-  ])
+  const [persons, setPersons] = useState([])
 
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
 
+  useEffect(() => {
+    axios
+      .get('http://localhost:3001/persons')
+      .then(response => {
+        setPersons(response.data)
+      })
+  }, [])
+
   const addPerson = (event) => {
     event.preventDefault()
 
     const nameExists = persons.some(
-      person => person.name.toLowerCase() === newName.toLowerCase()
+      person =>
+        person.name.toLowerCase() === newName.toLowerCase()
     )
 
     if (nameExists) {
@@ -90,6 +95,7 @@ const App = () => {
     }
 
     setPersons(persons.concat(personObject))
+
     setNewName('')
     setNewNumber('')
   }
