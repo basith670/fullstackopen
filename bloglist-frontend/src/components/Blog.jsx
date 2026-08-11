@@ -1,9 +1,9 @@
-import { useState } from 'react'
-
 const Blog = ({ blog, updateBlog, deleteBlog, user }) => {
-  const [showDetails, setShowDetails] = useState(false)
-
   const handleLike = async () => {
+    if (!user) {
+      return
+    }
+
     const updatedBlog = {
       ...blog,
       likes: blog.likes + 1,
@@ -17,48 +17,48 @@ const Blog = ({ blog, updateBlog, deleteBlog, user }) => {
     blog.user?.username === user?.username
 
   const handleDelete = () => {
+    if (!user) {
+      return
+    }
+
     deleteBlog(blog)
   }
 
   return (
     <div className="blog">
-      <div>
-        {blog.title} {blog.author}
-        {' '}
+      <h2>
+        {blog.title}
+      </h2>
 
-        <button
-          onClick={() => setShowDetails(!showDetails)}
-        >
-          {showDetails ? 'hide' : 'view'}
-        </button>
+      <div>
+        author {blog.author}
       </div>
 
-      {showDetails && (
+      <div>
+        {blog.url}
+      </div>
+
+      <div>
+        likes {blog.likes}
+
+        {' '}
+
+        {user && (
+          <button onClick={handleLike}>
+            like
+          </button>
+        )}
+      </div>
+
+      <div>
+        added by {blog.user?.name}
+      </div>
+
+      {isOwner && (
         <div>
-          <div>
-            {blog.url}
-          </div>
-
-          <div>
-            likes {blog.likes}
-            {' '}
-
-            <button onClick={handleLike}>
-              like
-            </button>
-          </div>
-
-          <div>
-            added by {blog.user?.name}
-          </div>
-
-          {isOwner && (
-            <div>
-              <button onClick={handleDelete}>
-                remove
-              </button>
-            </div>
-          )}
+          <button onClick={handleDelete}>
+            remove
+          </button>
         </div>
       )}
     </div>

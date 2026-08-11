@@ -1,76 +1,37 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { describe, test, expect, vi } from 'vitest'
 import Blog from '../Blog'
 
-describe('Blog component', () => {
-  test('renders title and author, but not URL or likes by default', () => {
-    const blog = {
-      title: 'The React Test Blog',
-      author: 'Muhammad Basith',
-      url: 'https://example.com/react-test',
-      likes: 5,
-      user: {
-        username: 'basith',
-        name: 'Muhammad Basith',
-        id: '123'
-      }
-    }
+const blog = {
+  title: 'The React Test Blog',
+  author: 'Muhammad Basith',
+  url: 'https://example.com/react-test',
+  likes: 5,
+  user: {
+    username: 'basith',
+    name: 'Muhammad Basith',
+    id: '123'
+  }
+}
 
+describe('Blog component', () => {
+  test('unauthenticated user sees blog information but no buttons', () => {
     render(
       <Blog
         blog={blog}
         updateBlog={() => {}}
         deleteBlog={() => {}}
-        user={{
-          username: 'basith',
-          name: 'Muhammad Basith',
-          id: '123'
-        }}
+        user={null}
       />
     )
 
     expect(
-      screen.getByText('The React Test Blog Muhammad Basith')
+      screen.getByText('The React Test Blog')
     ).toBeInTheDocument()
 
     expect(
-      screen.queryByText('https://example.com/react-test')
-    ).not.toBeInTheDocument()
-
-    expect(
-      screen.queryByText('likes 5')
-    ).not.toBeInTheDocument()
-  })
-
-  test('renders URL and likes when view button is clicked', () => {
-    const blog = {
-      title: 'The React Test Blog',
-      author: 'Muhammad Basith',
-      url: 'https://example.com/react-test',
-      likes: 5,
-      user: {
-        username: 'basith',
-        name: 'Muhammad Basith',
-        id: '123'
-      }
-    }
-
-    render(
-      <Blog
-        blog={blog}
-        updateBlog={() => {}}
-        deleteBlog={() => {}}
-        user={{
-          username: 'basith',
-          name: 'Muhammad Basith',
-          id: '123'
-        }}
-      />
-    )
-
-    const viewButton = screen.getByText('view')
-
-    fireEvent.click(viewButton)
+      screen.getByText('author Muhammad Basith')
+    ).toBeInTheDocument()
 
     expect(
       screen.getByText('https://example.com/react-test')
@@ -79,28 +40,65 @@ describe('Blog component', () => {
     expect(
       screen.getByText('likes 5')
     ).toBeInTheDocument()
+
+    expect(
+      screen.getByText('added by Muhammad Basith')
+    ).toBeInTheDocument()
+
+    expect(
+      screen.queryByRole('button', { name: 'like' })
+    ).not.toBeInTheDocument()
+
+    expect(
+      screen.queryByRole('button', { name: 'remove' })
+    ).not.toBeInTheDocument()
   })
 
-  test('calls updateBlog twice when like button is clicked twice', () => {
-    const blog = {
-      title: 'The React Test Blog',
-      author: 'Muhammad Basith',
-      url: 'https://example.com/react-test',
-      likes: 5,
-      user: {
-        username: 'basith',
-        name: 'Muhammad Basith',
-        id: '123'
-      }
-    }
-
-    const updateBlog = vi.fn()
-
+  test('authenticated user who is not the creator sees only the like button', () => {
     render(
       <Blog
         blog={blog}
-        updateBlog={updateBlog}
-        deleteBlog={() => {}}
+        updateBlog={vi.fn()}
+        deleteBlog={vi.fn()}
+        user={{
+          username: 'anotheruser',
+          name: 'Another User',
+          id: '456'
+        }}
+      />
+    )
+
+    expect(
+      screen.getByText('The React Test Blog')
+    ).toBeInTheDocument()
+
+    expect(
+      screen.getByText('author Muhammad Basith')
+    ).toBeInTheDocument()
+
+    expect(
+      screen.getByText('https://example.com/react-test')
+    ).toBeInTheDocument()
+
+    expect(
+      screen.getByText('likes 5')
+    ).toBeInTheDocument()
+
+    expect(
+      screen.getByRole('button', { name: 'like' })
+    ).toBeInTheDocument()
+
+    expect(
+      screen.queryByRole('button', { name: 'remove' })
+    ).not.toBeInTheDocument()
+  })
+
+  test('the creator sees both like and delete buttons', () => {
+    render(
+      <Blog
+        blog={blog}
+        updateBlog={vi.fn()}
+        deleteBlog={vi.fn()}
         user={{
           username: 'basith',
           name: 'Muhammad Basith',
@@ -109,15 +107,28 @@ describe('Blog component', () => {
       />
     )
 
-    const viewButton = screen.getByText('view')
+    expect(
+      screen.getByText('The React Test Blog')
+    ).toBeInTheDocument()
 
-    fireEvent.click(viewButton)
+    expect(
+      screen.getByText('author Muhammad Basith')
+    ).toBeInTheDocument()
 
-    const likeButton = screen.getByText('like')
+    expect(
+      screen.getByText('https://example.com/react-test')
+    ).toBeInTheDocument()
 
-    fireEvent.click(likeButton)
-    fireEvent.click(likeButton)
+    expect(
+      screen.getByText('likes 5')
+    ).toBeInTheDocument()
 
-    expect(updateBlog).toHaveBeenCalledTimes(2)
+    expect(
+      screen.getByRole('button', { name: 'like' })
+    ).toBeInTheDocument()
+
+    expect(
+      screen.getByRole('button', { name: 'remove' })
+    ).toBeInTheDocument()
   })
 })

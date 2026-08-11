@@ -1,6 +1,17 @@
 import { useState, useEffect } from 'react'
-import Blog from './components/Blog'
-import BlogForm from './components/BlogForm'
+import {
+  Routes,
+  Route,
+  Link,
+  Navigate,
+  useNavigate
+} from 'react-router-dom'
+
+import BlogList from './views/BlogList'
+import BlogView from './views/BlogView'
+import Login from './views/Login'
+import CreateBlog from './views/CreateBlog'
+
 import blogService from './services/blogs'
 import loginService from './services/login'
 
@@ -12,7 +23,12 @@ const App = () => {
   const [password, setPassword] = useState('')
 
   const [notification, setNotification] = useState(null)
-  const [showForm, setShowForm] = useState(false)
+
+  const navigate = useNavigate()
+
+  // --------------------------------------------------
+  // Load logged-in user and blogs
+  // --------------------------------------------------
 
   useEffect(() => {
     const loggedUserJSON =
@@ -23,10 +39,14 @@ const App = () => {
       setUser(loggedUser)
     }
 
-    blogService.getAll().then(blogs =>
+    blogService.getAll().then(blogs => {
       setBlogs(blogs)
-    )
+    })
   }, [])
+
+  // --------------------------------------------------
+  // Notification timeout
+  // --------------------------------------------------
 
   useEffect(() => {
     if (notification === null) {
@@ -41,6 +61,10 @@ const App = () => {
       clearTimeout(timeoutId)
     }
   }, [notification])
+
+  // --------------------------------------------------
+  // Login
+  // --------------------------------------------------
 
   const handleLogin = async event => {
     event.preventDefault()
@@ -60,6 +84,7 @@ const App = () => {
       )
 
       setUser(loggedInUser)
+
       setUsername('')
       setPassword('')
 
@@ -67,6 +92,8 @@ const App = () => {
         message: 'Login successful',
         type: 'success'
       })
+
+      navigate('/')
     } catch {
       setNotification({
         message: 'Wrong username or password',
@@ -75,12 +102,27 @@ const App = () => {
     }
   }
 
+  // --------------------------------------------------
+  // Logout
+  // --------------------------------------------------
+
   const handleLogout = () => {
     localStorage.removeItem('loggedBlogappUser')
+
     setUser(null)
+
+    navigate('/')
   }
 
+  // --------------------------------------------------
+  // Create blog
+  // --------------------------------------------------
+
   const handleCreateBlog = async newBlog => {
+    if (!user) {
+      return
+    }
+
     try {
       const createdBlog = await blogService.create(
         newBlog,
@@ -88,21 +130,34 @@ const App = () => {
       )
 
       setBlogs(blogs.concat(createdBlog))
-      setShowForm(false)
 
       setNotification({
         message: `a new blog "${createdBlog.title}" by ${createdBlog.author} added`,
         type: 'success'
       })
+
+      navigate('/')
+
+      return createdBlog
     } catch {
       setNotification({
         message: 'Failed to create blog',
         type: 'error'
       })
+
+      throw new Error('Failed to create blog')
     }
   }
 
+  // --------------------------------------------------
+  // Like blog
+  // --------------------------------------------------
+
   const handleUpdateBlog = async (id, updatedBlog) => {
+    if (!user) {
+      return
+    }
+
     try {
       const returnedBlog = await blogService.update(
         id,
@@ -112,7 +167,9 @@ const App = () => {
 
       setBlogs(
         blogs.map(blog =>
-          blog.id === id ? returnedBlog : blog
+          blog.id === id
+            ? returnedBlog
+            : blog
         )
       )
 
@@ -128,7 +185,15 @@ const App = () => {
     }
   }
 
+  // --------------------------------------------------
+  // Delete blog
+  // --------------------------------------------------
+
   const handleDeleteBlog = async blog => {
+    if (!user) {
+      return
+    }
+
     const confirmDelete = window.confirm(
       `Remove blog "${blog.title}" by ${blog.author}?`
     )
@@ -151,6 +216,8 @@ const App = () => {
         message: `blog "${blog.title}" removed`,
         type: 'success'
       })
+
+      navigate('/')
     } catch {
       setNotification({
         message: 'Failed to remove blog',
@@ -159,58 +226,51 @@ const App = () => {
     }
   }
 
-  if (user === null) {
-    return (
-      <div>
-        <h2>Log in to application</h2>
-
-        {notification && (
-          <div>
-            {notification.message}
-          </div>
-        )}
-
-        <form onSubmit={handleLogin}>
-          <div>
-            <label htmlFor="username">
-              username
-            </label>
-
-            <input
-              id="username"
-              value={username}
-              onChange={({ target }) =>
-                setUsername(target.value)
-              }
-            />
-          </div>
-
-          <div>
-            <label htmlFor="password">
-              password
-            </label>
-
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={({ target }) =>
-                setPassword(target.value)
-              }
-            />
-          </div>
-
-          <button type="submit">
-            login
-          </button>
-        </form>
-      </div>
-    )
-  }
+  // --------------------------------------------------
+  // Application
+  // --------------------------------------------------
 
   return (
     <div>
-      <h2>blogs</h2>
+      <h1>Bloglist</h1>
+
+      {/* Navigation */}
+
+      <nav>
+        <Link to="/">
+          blogs
+        </Link>
+
+        {' '}
+
+        {!user && (
+          <Link to="/login">
+            login
+          </Link>
+        )}
+
+        {user && (
+          <>
+            <Link to="/create">
+              create new blog
+            </Link>
+
+            {' '}
+
+            <span>
+              {user.name} logged in
+            </span>
+
+            {' '}
+
+            <button onClick={handleLogout}>
+              logout
+            </button>
+          </>
+        )}
+      </nav>
+
+      {/* Notification */}
 
       {notification && (
         <div>
@@ -218,46 +278,78 @@ const App = () => {
         </div>
       )}
 
-      <p>
-        {user.name} logged in
-        {' '}
-        <button onClick={handleLogout}>
-          logout
-        </button>
-      </p>
+      {/* Routes */}
 
-      {!showForm && (
-        <button onClick={() => setShowForm(true)}>
-          create new blog
-        </button>
-      )}
+      <Routes>
 
-      {showForm && (
-        <div>
-          <h3>create new</h3>
+        {/* Blog list */}
 
-          <BlogForm createBlog={handleCreateBlog} />
+        <Route
+          path="/"
+          element={
+            <BlogList
+              blogs={blogs}
+            />
+          }
+        />
 
-          <button
-            type="button"
-            onClick={() => setShowForm(false)}
-          >
-            cancel
-          </button>
-        </div>
-      )}
+        {/* Single blog */}
 
-      {[...blogs]
-        .sort((a, b) => b.likes - a.likes)
-        .map(blog =>
-          <Blog
-            key={blog.id}
-            blog={blog}
-            updateBlog={handleUpdateBlog}
-            deleteBlog={handleDeleteBlog}
-            user={user}
-          />
-        )}
+        <Route
+          path="/blogs/:id"
+          element={
+            <BlogView
+              blogs={blogs}
+              updateBlog={handleUpdateBlog}
+              deleteBlog={handleDeleteBlog}
+              user={user}
+            />
+          }
+        />
+
+        {/* Create blog */}
+
+        <Route
+          path="/create"
+          element={
+            user ? (
+              <CreateBlog
+                user={user}
+                createBlog={handleCreateBlog}
+              />
+            ) : (
+              <Navigate
+                to="/login"
+                replace
+              />
+            )
+          }
+        />
+
+        {/* Login */}
+
+        <Route
+          path="/login"
+          element={
+            user ? (
+              <Navigate
+                to="/"
+                replace
+              />
+            ) : (
+              <Login
+                username={username}
+                password={password}
+                handleUsernameChange={setUsername}
+                handlePasswordChange={setPassword}
+                handleLogin={handleLogin}
+                notification={notification}
+              />
+            )
+          }
+        />
+
+      </Routes>
     </div>
   )
 }
