@@ -1,0 +1,127 @@
+const { test, before, after, beforeEach } = require('node:test')
+const assert = require('node:assert')
+const mongoose = require('mongoose')
+const supertest = require('supertest')
+
+const app = require('../app')
+const Blog = require('../models/blog')
+
+const api = supertest(app)
+
+const initialBlogs = [
+  {
+    title: 'React patterns',
+    author: 'Michael Chan',
+    url: 'https://reactpatterns.com/',
+    likes: 7
+  },
+  {
+    title: 'Go To Statement Considered Harmful',
+    author: 'Edsger W. Dijkstra',
+    url: 'https://homepages.cwi.nl/~storm/teaching/reader/Dijkstra68.pdf',
+    likes: 5
+  }
+]
+
+before(async () => {
+  await mongoose.connect(process.env.MONGODB_URI)
+})
+
+beforeEach(async () => {
+  await Blog.deleteMany({})
+  await Blog.insertMany(initialBlogs)
+})
+
+test('blogs are returned as json', async () => {
+  await api
+    .get('/api/blogs')
+    .expect(200)
+    .expect('Content-Type', /application\/json/)
+})
+
+test('all blogs are returned', async () => {
+  const response = await api.get('/api/blogs')
+
+  assert.strictEqual(response.body.length, initialBlogs.length)
+})
+
+test('the unique identifier property is named id', async () => {
+  const response = await api.get('/api/blogs')
+
+  response.body.forEach(blog => {
+    assert(blog.id)
+    assert.strictEqual(blog._id, undefined)
+  })
+})
+
+test('a valid blog can be added', async () => {
+  const newBlog = {
+    title: 'New blog',
+    author: 'Muhammad Basith',
+    url: 'https://example.com/new-blog',
+    likes: 10
+  }
+
+  await api
+    .post('/api/blogs')
+    .send(newBlog)
+    .expect(201)
+    .expect('Content-Type', /application\/json/)
+
+  const response = await api.get('/api/blogs')
+
+  assert.strictEqual(
+    response.body.length,
+    initialBlogs.length + 1
+  )
+
+  const titles = response.body.map(blog => blog.title)
+
+  assert(titles.includes('New blog'))
+})
+
+test('likes defaults to 0 if missing', async () => {
+  const newBlog = {
+    title: 'Blog without likes',
+    author: 'Muhammad Basith',
+    url: 'https://example.com/no-likes'
+  }
+
+  const response = await api
+    .post('/api/blogs')
+    .send(newBlog)
+    .expect(201)
+    .expect('Content-Type', /application\/json/)
+
+  assert.strictEqual(response.body.likes, 0)
+})
+
+test('blog without title is not added', async () => {
+  const newBlog = {
+    author: 'Muhammad Basith',
+    url: 'https://example.com/no-title',
+    likes: 5
+  }
+
+  await api
+    .post('/api/blogs')
+    .send(newBlog)
+    .expect(400)
+})
+
+test('blog without url is not added', async () => {
+  const newBlog = {
+    title: 'Blog without URL',
+    author: 'Muhammad Basith',
+    likes: 5
+  }
+
+  await api
+    .post('/api/blogs')
+    .send(newBlog)
+    .expect(400)
+})
+
+after(async () => {
+  await mongoose.connection.close()
+})
