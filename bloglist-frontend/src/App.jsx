@@ -67,7 +67,7 @@ const App = () => {
         message: 'Login successful',
         type: 'success'
       })
-    } catch (error) {
+    } catch {
       setNotification({
         message: 'Wrong username or password',
         type: 'error'
@@ -94,7 +94,7 @@ const App = () => {
         message: `a new blog "${createdBlog.title}" by ${createdBlog.author} added`,
         type: 'success'
       })
-    } catch (error) {
+    } catch {
       setNotification({
         message: 'Failed to create blog',
         type: 'error'
@@ -120,7 +120,7 @@ const App = () => {
         message: `blog "${returnedBlog.title}" liked`,
         type: 'success'
       })
-    } catch (error) {
+    } catch {
       setNotification({
         message: 'Failed to update blog',
         type: 'error'
@@ -151,7 +151,7 @@ const App = () => {
         message: `blog "${blog.title}" removed`,
         type: 'success'
       })
-    } catch (error) {
+    } catch {
       setNotification({
         message: 'Failed to remove blog',
         type: 'error'
