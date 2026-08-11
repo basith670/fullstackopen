@@ -2,9 +2,11 @@ const { test, before, after, beforeEach } = require('node:test')
 const assert = require('node:assert')
 const mongoose = require('mongoose')
 const supertest = require('supertest')
+const bcrypt = require('bcrypt')
 
 const app = require('../app')
 const Blog = require('../models/blog')
+const User = require('../models/user')
 
 const api = supertest(app)
 
@@ -23,13 +25,42 @@ const initialBlogs = [
   }
 ]
 
+let token
+
 before(async () => {
   await mongoose.connect(process.env.MONGODB_URI)
 })
 
 beforeEach(async () => {
   await Blog.deleteMany({})
-  await Blog.insertMany(initialBlogs)
+  await User.deleteMany({})
+
+  const passwordHash = await bcrypt.hash('secret123', 10)
+
+  const user = new User({
+    username: 'blogtestuser',
+    passwordHash,
+    name: 'Blog Test User'
+  })
+
+  await user.save()
+
+  const blogsWithUser = initialBlogs.map(blog => ({
+    ...blog,
+    user: user._id
+  }))
+
+  await Blog.insertMany(blogsWithUser)
+
+  const loginResponse = await api
+    .post('/api/login')
+    .send({
+      username: 'blogtestuser',
+      password: 'secret123'
+    })
+    .expect(200)
+
+  token = loginResponse.body.token
 })
 
 test('blogs are returned as json', async () => {
@@ -64,6 +95,7 @@ test('a valid blog can be added', async () => {
 
   await api
     .post('/api/blogs')
+    .set('Authorization', `Bearer ${token}`)
     .send(newBlog)
     .expect(201)
     .expect('Content-Type', /application\/json/)
@@ -89,6 +121,7 @@ test('likes defaults to 0 if missing', async () => {
 
   const response = await api
     .post('/api/blogs')
+    .set('Authorization', `Bearer ${token}`)
     .send(newBlog)
     .expect(201)
     .expect('Content-Type', /application\/json/)
@@ -105,6 +138,7 @@ test('blog without title is not added', async () => {
 
   await api
     .post('/api/blogs')
+    .set('Authorization', `Bearer ${token}`)
     .send(newBlog)
     .expect(400)
 })
@@ -118,6 +152,7 @@ test('blog without url is not added', async () => {
 
   await api
     .post('/api/blogs')
+    .set('Authorization', `Bearer ${token}`)
     .send(newBlog)
     .expect(400)
 })
@@ -129,6 +164,7 @@ test('a blog can be deleted', async () => {
 
   await api
     .delete(`/api/blogs/${blogToDelete.id}`)
+    .set('Authorization', `Bearer ${token}`)
     .expect(204)
 
   const blogsAtEnd = await api.get('/api/blogs')
@@ -149,7 +185,9 @@ test('a blog can be updated', async () => {
   const blogToUpdate = blogsAtStart.body[0]
 
   const updatedBlog = {
-    ...blogToUpdate,
+    title: blogToUpdate.title,
+    author: blogToUpdate.author,
+    url: blogToUpdate.url,
     likes: blogToUpdate.likes + 10
   }
 
