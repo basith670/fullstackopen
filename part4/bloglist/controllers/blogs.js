@@ -3,12 +3,14 @@ const blogsRouter = require('express').Router()
 const Blog = require('../models/blog')
 const middleware = require('../utils/middleware')
 
+// GET all blogs
 blogsRouter.get('/', async (request, response) => {
   const blogs = await Blog.find({}).populate('user')
 
   response.json(blogs)
 })
 
+// POST create a new blog
 blogsRouter.post('/', middleware.userExtractor, async (request, response) => {
   const blog = new Blog({
     ...request.body,
@@ -20,6 +22,7 @@ blogsRouter.post('/', middleware.userExtractor, async (request, response) => {
   response.status(201).json(savedBlog)
 })
 
+// DELETE a blog
 blogsRouter.delete('/:id', middleware.userExtractor, async (request, response) => {
   const id = request.params.id
 
@@ -42,6 +45,7 @@ blogsRouter.delete('/:id', middleware.userExtractor, async (request, response) =
   response.status(204).end()
 })
 
+// PUT update a blog
 blogsRouter.put('/:id', async (request, response, next) => {
   const id = request.params.id
 
@@ -53,7 +57,7 @@ blogsRouter.put('/:id', async (request, response, next) => {
         returnDocument: 'after',
         runValidators: true
       }
-    )
+    ).populate('user')
 
     if (!updatedBlog) {
       return response.status(404).json({
