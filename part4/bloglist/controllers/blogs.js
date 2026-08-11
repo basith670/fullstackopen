@@ -5,70 +5,98 @@ const middleware = require('../utils/middleware')
 
 // GET all blogs
 blogsRouter.get('/', async (request, response) => {
-  const blogs = await Blog.find({}).populate('user')
+  const blogs = await Blog
+    .find({})
+    .populate('user')
 
   response.json(blogs)
 })
 
 // POST create a new blog
-blogsRouter.post('/', middleware.userExtractor, async (request, response) => {
-  const blog = new Blog({
-    ...request.body,
-    user: request.user._id
-  })
+blogsRouter.post(
+  '/',
+  middleware.userExtractor,
+  async (request, response, next) => {
+    try {
+      const blog = new Blog({
+        ...request.body,
+        user: request.user._id
+      })
 
-  const savedBlog = await blog.save()
+      const savedBlog = await blog.save()
 
-  response.status(201).json(savedBlog)
-})
+      const populatedBlog = await savedBlog.populate('user')
+
+      response.status(201).json(populatedBlog)
+    } catch (error) {
+      next(error)
+    }
+  }
+)
 
 // DELETE a blog
-blogsRouter.delete('/:id', middleware.userExtractor, async (request, response) => {
-  const id = request.params.id
+blogsRouter.delete(
+  '/:id',
+  middleware.userExtractor,
+  async (request, response, next) => {
+    try {
+      const id = request.params.id
 
-  const blog = await Blog.findById(id)
+      const blog = await Blog.findById(id)
 
-  if (!blog) {
-    return response.status(404).json({
-      error: 'blog not found'
-    })
+      if (!blog) {
+        return response.status(404).json({
+          error: 'blog not found'
+        })
+      }
+
+      if (
+        blog.user.toString() !==
+        request.user._id.toString()
+      ) {
+        return response.status(403).json({
+          error: 'user not authorized to delete this blog'
+        })
+      }
+
+      await Blog.findByIdAndDelete(id)
+
+      response.status(204).end()
+    } catch (error) {
+      next(error)
+    }
   }
-
-  if (blog.user.toString() !== request.user._id.toString()) {
-    return response.status(403).json({
-      error: 'user not authorized to delete this blog'
-    })
-  }
-
-  await Blog.findByIdAndDelete(id)
-
-  response.status(204).end()
-})
+)
 
 // PUT update a blog
-blogsRouter.put('/:id', async (request, response, next) => {
-  const id = request.params.id
+blogsRouter.put(
+  '/:id',
+  async (request, response, next) => {
+    try {
+      const id = request.params.id
 
-  try {
-    const updatedBlog = await Blog.findByIdAndUpdate(
-      id,
-      request.body,
-      {
-        returnDocument: 'after',
-        runValidators: true
+      const updatedBlog = await Blog
+        .findByIdAndUpdate(
+          id,
+          request.body,
+          {
+            returnDocument: 'after',
+            runValidators: true
+          }
+        )
+        .populate('user')
+
+      if (!updatedBlog) {
+        return response.status(404).json({
+          error: 'blog not found'
+        })
       }
-    ).populate('user')
 
-    if (!updatedBlog) {
-      return response.status(404).json({
-        error: 'blog not found'
-      })
+      response.json(updatedBlog)
+    } catch (error) {
+      next(error)
     }
-
-    response.json(updatedBlog)
-  } catch (error) {
-    next(error)
   }
-})
+)
 
 module.exports = blogsRouter

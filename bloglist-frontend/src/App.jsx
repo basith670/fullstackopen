@@ -172,8 +172,12 @@ const App = () => {
 
         <form onSubmit={handleLogin}>
           <div>
-            username
+            <label htmlFor="username">
+              username
+            </label>
+
             <input
+              id="username"
               value={username}
               onChange={({ target }) =>
                 setUsername(target.value)
@@ -182,8 +186,12 @@ const App = () => {
           </div>
 
           <div>
-            password
+            <label htmlFor="password">
+              password
+            </label>
+
             <input
+              id="password"
               type="password"
               value={password}
               onChange={({ target }) =>
