@@ -1,4 +1,84 @@
 import { useNavigate, useParams } from 'react-router-dom'
+import styled from 'styled-components'
+
+const BlogContainer = styled.div`
+  max-width: 750px;
+  margin: 40px auto;
+  padding: 30px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+`
+
+const BlogTitle = styled.h2`
+  margin-bottom: 20px;
+  font-size: 2rem;
+  color: #222;
+`
+
+const BlogInfo = styled.p`
+  margin: 12px 0;
+  color: #555;
+  font-size: 1rem;
+`
+
+const BlogUrl = styled.a`
+  display: block;
+  margin: 15px 0;
+  color: #2563eb;
+  text-decoration: none;
+  word-break: break-word;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`
+
+const LikesSection = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+`
+
+const Button = styled.button`
+  border: none;
+  border-radius: 6px;
+  padding: 9px 16px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  background: #2563eb;
+  color: white;
+
+  &:hover {
+    background: #1d4ed8;
+  }
+`
+
+const DeleteButton = styled(Button)`
+  background: #dc2626;
+  margin-top: 15px;
+
+  &:hover {
+    background: #b91c1c;
+  }
+`
+
+const BackButton = styled(Button)`
+  background: #6b7280;
+  margin-top: 25px;
+
+  &:hover {
+    background: #4b5563;
+  }
+`
+
+const NotFound = styled.div`
+  max-width: 750px;
+  margin: 40px auto;
+  padding: 30px;
+  text-align: center;
+`
 
 const BlogView = ({
   blogs,
@@ -13,13 +93,13 @@ const BlogView = ({
 
   if (!blog) {
     return (
-      <div>
+      <NotFound>
         <p>Blog not found</p>
 
-        <button onClick={() => navigate('/')}>
+        <BackButton onClick={() => navigate('/')}>
           back to blogs
-        </button>
-      </div>
+        </BackButton>
+      </NotFound>
     )
   }
 
@@ -49,45 +129,51 @@ const BlogView = ({
   }
 
   return (
-    <div className="blog">
-      <h2>
+    <BlogContainer className="blog">
+      <BlogTitle>
         {blog.title}
-      </h2>
+      </BlogTitle>
 
-      <p>
+      <BlogInfo>
         author {blog.author}
-      </p>
+      </BlogInfo>
 
-      <p>
+      <BlogUrl
+        href={blog.url}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
         {blog.url}
-      </p>
+      </BlogUrl>
 
-      <p>
-        likes {blog.likes}
-      </p>
+      <LikesSection>
+        <BlogInfo>
+          likes {blog.likes}
+        </BlogInfo>
 
-      {user && (
-        <button onClick={handleLike}>
-          like
-        </button>
-      )}
+        {user && (
+          <Button onClick={handleLike}>
+            like
+          </Button>
+        )}
+      </LikesSection>
 
-      <p>
+      <BlogInfo>
         added by {blog.user?.name}
-      </p>
+      </BlogInfo>
 
       {isOwner && (
-        <button onClick={handleDelete}>
+        <DeleteButton onClick={handleDelete}>
           remove
-        </button>
+        </DeleteButton>
       )}
 
       <div>
-        <button onClick={() => navigate('/')}>
+        <BackButton onClick={() => navigate('/')}>
           back to blogs
-        </button>
+        </BackButton>
       </div>
-    </div>
+    </BlogContainer>
   )
 }
 

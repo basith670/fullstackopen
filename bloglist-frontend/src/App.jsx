@@ -6,6 +6,7 @@ import {
   Navigate,
   useNavigate
 } from 'react-router-dom'
+import styled from 'styled-components'
 
 import BlogList from './views/BlogList'
 import BlogView from './views/BlogView'
@@ -14,6 +15,92 @@ import CreateBlog from './views/CreateBlog'
 
 import blogService from './services/blogs'
 import loginService from './services/login'
+
+// ==================================================
+// Styled components
+// ==================================================
+
+const AppContainer = styled.div`
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #1f2937;
+`
+
+const AppTitle = styled.h1`
+  margin-bottom: 20px;
+  color: #111827;
+`
+
+const Navigation = styled.nav`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  margin-bottom: 24px;
+  background: #1f2937;
+  border-radius: 10px;
+`
+
+const NavLink = styled(Link)`
+  padding: 8px 12px;
+  border-radius: 6px;
+  color: #ffffff;
+  text-decoration: none;
+  font-weight: 600;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #374151;
+  }
+`
+
+const UserInfo = styled.span`
+  margin-left: auto;
+  color: #d1d5db;
+  font-size: 14px;
+`
+
+const LogoutButton = styled.button`
+  padding: 8px 14px;
+  border: 1px solid #ef4444;
+  border-radius: 6px;
+  background: transparent;
+  color: #fca5a5;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+
+  &:hover {
+    background: #ef4444;
+    color: #ffffff;
+  }
+`
+
+const Notification = styled.div`
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: ${({ $type }) =>
+    $type === 'error'
+      ? '#fee2e2'
+      : '#dcfce7'};
+  color: ${({ $type }) =>
+    $type === 'error'
+      ? '#991b1b'
+      : '#166534'};
+  border: 1px solid
+    ${({ $type }) =>
+      $type === 'error'
+        ? '#fecaca'
+        : '#bbf7d0'};
+  font-weight: 500;
+`
+
+// ==================================================
+// App
+// ==================================================
 
 const App = () => {
   const [blogs, setBlogs] = useState([])
@@ -231,59 +318,50 @@ const App = () => {
   // --------------------------------------------------
 
   return (
-    <div>
-      <h1>Bloglist</h1>
+    <AppContainer>
+      <AppTitle>Bloglist</AppTitle>
 
       {/* Navigation */}
 
-      <nav>
-        <Link to="/">
+      <Navigation>
+        <NavLink to="/">
           blogs
-        </Link>
-
-        {' '}
+        </NavLink>
 
         {!user && (
-          <Link to="/login">
+          <NavLink to="/login">
             login
-          </Link>
+          </NavLink>
         )}
 
         {user && (
           <>
-            <Link to="/create">
+            <NavLink to="/create">
               create new blog
-            </Link>
+            </NavLink>
 
-            {' '}
-
-            <span>
+            <UserInfo>
               {user.name} logged in
-            </span>
+            </UserInfo>
 
-            {' '}
-
-            <button onClick={handleLogout}>
+            <LogoutButton onClick={handleLogout}>
               logout
-            </button>
+            </LogoutButton>
           </>
         )}
-      </nav>
+      </Navigation>
 
       {/* Notification */}
 
       {notification && (
-        <div>
+        <Notification $type={notification.type}>
           {notification.message}
-        </div>
+        </Notification>
       )}
 
       {/* Routes */}
 
       <Routes>
-
-        {/* Blog list */}
-
         <Route
           path="/"
           element={
@@ -292,8 +370,6 @@ const App = () => {
             />
           }
         />
-
-        {/* Single blog */}
 
         <Route
           path="/blogs/:id"
@@ -306,8 +382,6 @@ const App = () => {
             />
           }
         />
-
-        {/* Create blog */}
 
         <Route
           path="/create"
@@ -325,8 +399,6 @@ const App = () => {
             )
           }
         />
-
-        {/* Login */}
 
         <Route
           path="/login"
@@ -348,9 +420,8 @@ const App = () => {
             )
           }
         />
-
       </Routes>
-    </div>
+    </AppContainer>
   )
 }
 
